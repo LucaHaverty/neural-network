@@ -55,13 +55,38 @@ public class NetworkController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.S))
             StartNetwork();
 
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            StartCoroutine(TestRoutine());
+        }
+
         if (started)
         {
             GraphController.instance.UpdateTexture();
 
             if (Input.GetKey(KeyCode.Space))
-                network.Learn(trainingData.ToArray(), Settings.instance.learnRate);
+                LearnForIterations(1);
 
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                ScreenshotController.instance.TakeNetworkPicture("");
+            }
+
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+                LearnForIterations(10);
+            if (Input.GetKeyDown(KeyCode.Alpha2))   
+                LearnForIterations(40);
+            if (Input.GetKeyDown(KeyCode.Alpha3))
+                StartCoroutine(LearnForIterationsBatched(50));
+            if (Input.GetKeyDown(KeyCode.Alpha4))
+                StartCoroutine(LearnForIterationsBatched(400));
+            if (Input.GetKeyDown(KeyCode.Alpha5))
+                StartCoroutine(LearnForIterationsBatched(1600));
+            if (Input.GetKeyDown(KeyCode.Alpha6))
+                StartCoroutine(LearnForIterationsBatched(2000));
+            if (Input.GetKeyDown(KeyCode.Alpha7))
+                StartCoroutine(LearnForIterationsBatched(10000));
+            
             if (Input.GetKeyDown(KeyCode.R))
             {
                 network = new NeuralNetwork(Settings.instance.layers);
@@ -75,8 +100,6 @@ public class NetworkController : MonoBehaviour
 
             if (autoEval)
                 network.Learn(trainingData.ToArray(), Settings.instance.learnRate);
-
-
         }
 
         if (Input.GetMouseButtonDown(0))
@@ -88,6 +111,51 @@ public class NetworkController : MonoBehaviour
         {
             AddPoint(Classification.Red, GraphController.WorldToGraphPos(Camera.main.ScreenToWorldPoint(Input.mousePosition)));
         }
+    }
+
+    public IEnumerator TestRoutine()
+    {
+        CostVisualization.instance.ResetTextUnderGraph();
+        GraphController.instance.ToggleOverlay();
+        ScreenshotController.instance.TakeNetworkPicture("0");
+        GraphController.instance.ToggleOverlay();
+
+        LearnForIterations(10);
+        ScreenshotController.instance.TakeNetworkPicture("10");
+        yield return null;
+        LearnForIterations(90);
+        ScreenshotController.instance.TakeNetworkPicture("100");
+        yield return null;
+        yield return StartCoroutine(LearnForIterationsBatched(400));
+        ScreenshotController.instance.TakeNetworkPicture("500");
+        yield return StartCoroutine(LearnForIterationsBatched(500));
+        ScreenshotController.instance.TakeNetworkPicture("1000");
+        yield return StartCoroutine(LearnForIterationsBatched(1000));
+        ScreenshotController.instance.TakeNetworkPicture("2000");
+        ScreenshotController.instance.TakeCostPicture("cost");
+    }
+
+    private IEnumerator LearnForIterationsBatched(int iterations)
+    {
+        iterations /= 50;
+        for (int i = 0; i < iterations; i++)
+        {
+            for (int iteration = 0; iteration < 50; iteration++)
+            {
+                network.Learn(trainingData.ToArray(), Settings.instance.learnRate);
+            }
+            CostVisualization.instance.PopulateGraph();
+            yield return null;
+        }
+    }
+
+    private void LearnForIterations(int iterations)
+    {
+        for (int iteration = 0; iteration < iterations; iteration++)
+        {
+            network.Learn(trainingData.ToArray(), Settings.instance.learnRate);
+        }
+        CostVisualization.instance.PopulateGraph();
     }
 
     void StartNetwork()
@@ -148,7 +216,7 @@ public class NetworkController : MonoBehaviour
         }
     }
 
-    void AddPoint(Classification classification, Vector2 position)  
+    void AddPoint(Classification classification, Vector2 position)
     {
         GameObject prefab = Instantiate(classification == Classification.Red ? Settings.instance.redPrefab : Settings.instance.bluePrefab);
         prefab.transform.position = GraphController.GraphToWorldPos(position);

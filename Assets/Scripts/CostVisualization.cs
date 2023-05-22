@@ -21,7 +21,10 @@ public class CostVisualization : MonoBehaviour
     public float xRange;
 
     public TextMeshProUGUI[] axisLabelsX;
+    public TextMeshProUGUI[] costLabels;
 
+    public TextMeshProUGUI iterationText;
+    public TextMeshProUGUI costText;
 
     List<Vector2> testData = new List<Vector2>();
     void Start()
@@ -37,49 +40,53 @@ public class CostVisualization : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.C))
+        if (Input.GetKeyDown(KeyCode.G))
+        {
             PopulateGraph();
+        }
     }
 
     List<float> dataPoints = new List<float>();
     private void OnCostUpdate(float newCost)
     {
         dataPoints.Add(newCost);
-        PopulateGraph();
     }
 
     private void OnNetworkReset()
     {
         dataPoints.Clear();
-    }
+    }   
 
-    void PopulateGraph()
+    public void ResetTextUnderGraph() 
     {
-        // Remove old points - keep origin and topRightPoint transforms
+        iterationText.text = $"Iteration: 0";
+        costText.text = $"Average Cost: N/A";
+    }
+    
+    public void PopulateGraph()
+    {
+        // Text under graph
+        iterationText.text = $"Iteration: {dataPoints.Count}";
+        costText.text = $"Average Cost: {Mathf.RoundToInt(dataPoints[^1]*1000)/1000f}";
+        
+        // Remove old points
         for (int i = 0; i < graphPointsContainer.childCount; i++)
             Destroy(graphPointsContainer.GetChild(i).gameObject);
         
         xRange = dataPoints.Count;
 
-        List<int> iterationsToGraph = new List<int>();
-        iterationsToGraph.Add(0);
+        List<float> positionsToGraph = new List<float>();
+        positionsToGraph.Add(0);
         for (int i = 1; i < numPoints; i++)
         {
             float percent = (float)i / (numPoints-1);
-            iterationsToGraph.Add(Mathf.Max(Mathf.FloorToInt(percent*xRange)-1,0));
+            positionsToGraph.Add(Mathf.Max(percent*xRange-1,0));
         }
-
-        /*string result = "List contents: ";
-        foreach (int item in iterationsToGraph)
-        {
-            result += item.ToString() + ", ";
-        }
-        Debug.Log(result);*/
-
+        
         List<Vector2> worldPositions = new List<Vector2>();
-        foreach (int index in iterationsToGraph)
+        foreach (float index in positionsToGraph)
         {
-            Vector2 graphPos = new Vector2(index, dataPoints[index]);
+            Vector2 graphPos = new Vector2(index, dataPoints[Mathf.FloorToInt(index)]);
             GameObject point = Instantiate(pointPrefab, GraphToWorldPos(graphPos), Quaternion.identity);
             point.transform.SetParent(graphPointsContainer);
             point.transform.localScale = new Vector2(0.75f, 0.75f);
@@ -102,7 +109,10 @@ public class CostVisualization : MonoBehaviour
 
         for (int i = 0; i < axisLabelsX.Length; i++)
         {
-            axisLabelsX[i].text = $"{iterationsToGraph[i]}";
+            axisLabelsX[i].text = $"{Mathf.FloorToInt(positionsToGraph[i*5])+1}";
+
+            costLabels[i].text = (Mathf.Round(dataPoints[Mathf.FloorToInt(positionsToGraph[i*5])]*1000)/1000f).ToString();
+            costLabels[i].transform.position = graphPointsContainer.GetChild(i*5).position + new Vector3(0, 1.2f);
         }
     }
 

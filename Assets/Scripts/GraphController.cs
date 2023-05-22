@@ -23,7 +23,15 @@ public class GraphController : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            graphOverlay.SetActive(!graphOverlay.activeSelf);
+        }
+    }
 
+    public void ToggleOverlay()
+    {
+        graphOverlay.SetActive(!graphOverlay.activeSelf);
     }
 
     public void InitializeOverlayTexture()
@@ -66,15 +74,14 @@ public class GraphController : MonoBehaviour
     }
 
     #region Factor Conversions
-    public static Vector2 WorldToGraphPos(Vector2 worldPos)
-    {
+    public static Vector2 WorldToGraphPos(Vector2 worldPos) {
         float conversion = 0.078125f;
-        return worldPos * conversion;
+        return (worldPos-(Vector2)instance.transform.position) * conversion;
     }
     public static Vector2 GraphToWorldPos(Vector2 graphPos)
     {
         float conversion = 12.8f;
-        return graphPos * conversion;
+        return (graphPos * conversion)+(Vector2)instance.transform.position;
     }
     public static Vector2 TextureToGraphPos(Vector2Int texturePos)
     {
